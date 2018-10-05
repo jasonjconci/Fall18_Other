@@ -35,11 +35,19 @@ class Cell:
 Function fo printing out the matrix in the format specified in the book,
 because the data structure I use is [0][0] is top left, not bottom left
 '''
-def print_matrix(matrix):
-    for row in matrix[::-1]:
+def print_matrix(matrix, source_string, target_string):
+    target_string = " " + target_string
+    for i,row in enumerate(matrix[::-1]):
+        if i != len(target_string):
+            print(target_string[len(target_string)-1-i]),
         for each in row:
             each.print_cell(),
         print
+    print "     ",
+    #source_string = "  "  + source_string
+    for i in source_string:
+        print "   " + i,
+    print
 
 
 '''
@@ -87,85 +95,58 @@ def create_matrix(str_one, str_two):
     matrix = [[Cell(0, i, j) for i in range(n+1)] for j in range(m+1)]
     for i in range(n+1):
         matrix[0][i].score = i
+        matrix[0][i].directions = ["DEL"]
     for j in range(m+1):
         matrix[j][0].score = j
-    print_matrix(matrix)
+        matrix[j][0].directions = ["INS"]
+    print "EMPTY MATRIX"
+    print_matrix(matrix, str_one, str_two)
 
     for i in range(1, m+1):
         for j in range(1, n+1):
             matrix = input_score_and_pointers(matrix, i, j, str_one, str_two)
-    print
-    print_matrix(matrix)
-    depth_first_search(matrix)
+    print "COMPLETED MATRIX"
+    print_matrix(matrix, str_one, str_two)
+    get_alignment_backtrace(matrix, str_one, str_two)
 
 
-def get_children(node):
-    children = []
-    directions = node.directions
-    for each in directions:
-        if each == SUB:
-            children.append((node.xcoord - 1, node.ycoord - 1))
-        if each == INS:
-            children.append((node.xcoord - 1, node.ycoord))
-        if each == DEL:
-            children.append((node.xcoord, node.ycoord - 1))
-    return children
+def get_alignment_backtrace(matrix, source_string, target_string):
+    n = len(source_string)
+    m = len(target_string)
+    node = matrix[m][n]  
+    source_string_ls = []
+    target_string_ls = []
+    op_ls = []
 
-
-'''
-It seems, to me, computing the minimum alignment involves computing the shortest
-path from M(n,m) to M(0,0). At any given point, as in the book, we can move down,
-left, or diagonal. This algorithm is meant to emulate a breadth first search, as
-a means of computing the backtrace.
-'''
-def depth_first_search(matrix):
-    print "NODE EQUALS NODE",
-    print matrix[0][0] == Cell(0,0,0), matrix[0][0].print_cell_all()
-    n = len(matrix[0])
-    m = len(matrix)
-    print(n, m)
-    node_init = matrix[n-1][m-1]
-    state_list = []
-
-    all_paths_list = dfs_recursive(matrix, node_init, state_list)
-
-    all_paths_list = [i for i in all_paths_list if i!= []]
-    for path in all_paths_list[0]:
-        print "NEW PATH"
-        for state in path:
-            for step in state:
-                print(step)
-        print '\n\n'
-    print(len(all_paths_list[0]))
-
-
-
-def get_alignment_backtrace(matrix):
-    print "NODE EQUALS NODE",
-    print matrix[0][0] == Cell(0,0,0), matrix[0][0].print_cell_all()
-    n = len(matrix[0])
-    m = len(matrix)
-    node = matrix[n-1][m-1]
-    backtrace = []
-    while node != Cell(0,0,0):
-        children = get_children(node)
-        backtrace.append(node.directions[0])
-        node = matrix[children[0][0]][children[0][1]]
-
-
-'''
-def dfs_recursive(matrix, node, state_list):
-    state_list.append(node)
-    # If we're at the end, just return the state list
-    if node == Cell(0,0,0):
-        return state_list
-    else:
-        children = get_children(node)
-        if children == []:
-            return
-        child_nodes = [matrix[child[0]][child[1]] for child in children]
-        return [dfs_recursive(matrix, child, state_list) for child in child_nodes]
-'''
+    print "Minimum edit distance score:", node.score
+    
+    while n > 0 or m > 0:
+        children = matrix[m][n].directions
+        if SUB in children and m > 0 and n > 0:
+            if source_string[n-1] != target_string[m-1]:
+                op_ls.insert(0, SUB)
+            else:
+                op_ls.insert(0, ' ')
+            source_string_ls.insert(0, source_string[n-1])
+            target_string_ls.insert(0, target_string[m-1])
+            n -=1
+            m -= 1
+        elif DEL in children and n > 0:
+            op_ls.insert(0,DEL)
+            source_string_ls.insert(0, source_string[n-1])
+            target_string_ls.insert(0, "#")
+            n -= 1
+        elif INS in children and m > 0:
+            op_ls.insert(0, INS)
+            source_string_ls.insert(0, "#")
+            target_string_ls.insert(0, target_string[m-1])
+            m -= 1
+    
+    for i in range(len(target_string_ls)):
+        print source_string_ls[i],
+        print " - ",
+        print target_string_ls[i],
+        print op_ls[i]
 
 def main(strargs):
     print("Hello world!")
@@ -176,5 +157,5 @@ def main(strargs):
 
 # allows us to easily run at command line, "python project5.py arg1 arg2 ..."
 if __name__ == "__main__":
-    print sys.argv[1:]
-    main(sys.argv[1:])
+    #print sys.argv[1:]
+    main(["intention", "execution"])
